@@ -1,0 +1,4 @@
+[
+ 	{ "caption": "Random:Int", "command": "random_int_window" },
+	{ "caption": "Random:Float", "command": "random_float_window" },
+]
