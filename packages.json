@@ -3,18 +3,16 @@
 	"packages":
 	[
 		{
-			{
-				"name": "vg-utils",
-				"details": "https://bitbucket.org/valeriog/sublime-text-plugins",
-				"author": "valeriog",
-				"releases":
-				[
-					{
-						"sublime_text": "*",
-						"details": "https://bitbucket.org/valeriog/sublime-text-plugins/src/default"
-					}
-				]
-			},
+			"name": "vg-utils",
+			"details": "https://bitbucket.org/valeriog/sublime-text-plugins",
+			"author": "valeriog",
+			"releases":
+			[
+				{
+					"sublime_text": "*",
+					"tags": true
+				}
+			]
 		}
 	]
 }
