@@ -3,69 +3,64 @@ import sublime_plugin
 import re
 import random
 import ast
+import string
 
-def random_int(params):
-	return str(random.randint(params['low'], params['high']))
+def get_random_int(low, high):
+	return str(random.randint(low, high))
 
-def random_float(params):
-	return params['format'].format(random.uniform(params['low'], params['high']))
+def get_random_float(low, high, fmt):
+	return fmt.format(random.uniform(low, high))
 
-def insert_into_view(edit, view, func, params):
+def get_random_string(choice_set, length):
+	return ''.join(random.choice(choice_set) for _ in range(length))
+
+def insert_into_view(edit, view, type, params):
+	expression = 'get_random_{}({})'.format(type, params['params'])
 	for region in view.sel():
-		view.insert(edit, region.begin(), func(params))
+		view.insert(edit, region.begin(), eval(expression))
 
 class RandomIntCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **params):
-		insert_into_view(edit, self.view, random_int, params)
+		insert_into_view(edit, self.view, 'int', params)
 
 class RandomFloatCommand(sublime_plugin.TextCommand):
 	def run(self, edit, **params):
-		insert_into_view(edit, self.view, random_float, params)
+		insert_into_view(edit, self.view, 'float', params)
 
-random_number_params = {
-	'int': { 'low': 0, 'high': 10, },
-	'float': { 'low': 0.0, 'high': 10.0, 'format': '{0:.2f}'}
+class RandomStringCommand(sublime_plugin.TextCommand):
+	def run(self, edit, **params):
+		insert_into_view(edit, self.view, 'string', params)
+
+default_params = {
+	'int': 'low = 0, high = 10',
+	'float': 'low = 0.0, high = 10.0, fmt = \'{0:.2f}\'',
+	'string': 'length = 8, choice_set = string.ascii_lowercase'
 }
 
-def params_to_string(params):
-	return ', '.join('{0} = {1}'.format(key, value) for key, value in params.items())
-
-def string_to_params(params_text):
-	params_text_split = params_text.split(',')
-	params = {}
-	for param_text in params_text_split:
-		match = re.match(r"\s*(\S+)\s*=\s*(\S+)\s*", param_text)
-		if match is None:
-			raise RuntimeError('Invalid parameter format')
-		params[match.group(1)] = match.group(2)
-	return params
-
-class RandomNumberWindowCommand(sublime_plugin.WindowCommand):
-	def run_internal(self, type):
+class RandomWindowDispatch:
+	def __init__(self, type):
 		self.type = type
-		self.default_params = random_number_params[type]
-		self.window.show_input_panel('Random {} parameters'.format(type), params_to_string(self.default_params), self.apply, None, None)
+		self.current_params = default_params[type]
 
-	def apply(self, params_text):
-		try:
-			params = string_to_params(params_text)
-			for key, value_text in params.items():
-				old_value = self.default_params.get(key)
-				if old_value is None:
-					raise RuntimeError('Unrecognized parameter "{}"'.format(key))
-				old_value_type = type(old_value)
-				value = old_value_type(value_text)
-				print(type(value))
-				if old_value != value:
-					self.default_params[key] = value
-			self.window.active_view().run_command('random_{}'.format(self.type), self.default_params)
-		except RuntimeError as e:
-			sublime.error_message(str(e))
+	def run(self, window):
+		self.window = window
+		self.window.show_input_panel('Random {} parameters'.format(type), self.current_params, self.apply, None, None)
 
-class RandomIntWindowCommand(RandomNumberWindowCommand):
+	def apply(self, params):
+		self.current_params = params
+		self.window.active_view().run_command('random_{}'.format(self.type), {'params' : self.current_params})
+
+class RandomIntWindowCommand(sublime_plugin.WindowCommand):
+	dispatch = RandomWindowDispatch('int')
 	def run(self):
-		self.run_internal('int')
+		self.dispatch.run(self.window)
 
-class RandomFloatWindowCommand(RandomNumberWindowCommand):
+class RandomFloatWindowCommand(sublime_plugin.WindowCommand):
+	dispatch = RandomWindowDispatch('float')
 	def run(self):
-		self.run_internal('float')
+		self.dispatch.run(self.window)
+
+class RandomStringWindowCommand(sublime_plugin.WindowCommand):
+	dispatch = RandomWindowDispatch('string')
+	def run(self):
+		self.dispatch.run(self.window)
