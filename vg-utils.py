@@ -15,7 +15,7 @@ def get_random_string(choice_set, length):
 	return ''.join(random.choice(choice_set) for _ in range(length))
 
 def insert_into_view(edit, view, type, params):
-	expression = 'get_random_{}({})'.format(type, params['params'])
+	expression = 'get_random_{0}({1})'.format(type, params['params'])
 	for region in view.sel():
 		view.insert(edit, region.begin(), eval(expression))
 
@@ -44,11 +44,11 @@ class RandomWindowDispatch:
 
 	def run(self, window):
 		self.window = window
-		self.window.show_input_panel('Random {} parameters'.format(type), self.current_params, self.apply, None, None)
+		self.window.show_input_panel('Random {0} parameters'.format(type), self.current_params, self.apply, None, None)
 
 	def apply(self, params):
 		self.current_params = params
-		self.window.active_view().run_command('random_{}'.format(self.type), {'params' : self.current_params})
+		self.window.active_view().run_command('random_{0}'.format(self.type), {'params' : self.current_params})
 
 class RandomIntWindowCommand(sublime_plugin.WindowCommand):
 	dispatch = RandomWindowDispatch('int')
